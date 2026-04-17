@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/tapp_widget_description"
+    android:initialLayout="@layout/tapp_widget_layout"
+    android:minHeight="120dp"
+    android:minResizeHeight="120dp"
+    android:minResizeWidth="180dp"
+    android:minWidth="180dp"
+    android:previewImage="@drawable/tapp_widget_wheel_spin"
+    android:resizeMode="none"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

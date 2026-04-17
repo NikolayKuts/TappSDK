@@ -18,6 +18,8 @@ local.properties
 # Gradle
 .gradle/
 **/.gradle/
+.gradle-user-home/
+**/.gradle-user-home/
 **/build/
 
 # Android generated files
