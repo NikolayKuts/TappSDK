@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "AndroidTappSDK"
 include(":app")
+include(":Library")
