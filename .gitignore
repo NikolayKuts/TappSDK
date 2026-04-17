@@ -1,0 +1,42 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+*.iml
+*.iws
+.vscode/
+
+# Local environment
+local.properties
+**/local.properties
+.env
+.env.*
+!.env.example
+
+# Gradle
+.gradle/
+**/.gradle/
+**/build/
+
+# Android generated files
+captures/
+**/captures/
+.cxx/
+**/.cxx/
+.externalNativeBuild/
+**/.externalNativeBuild/
+.kotlin/
+**/.kotlin/
+
+# Android build artifacts
+*.apk
+*.ap_
+*.aab
+
+# Signing keys and local signing config
+*.jks
+*.keystore
+key.properties
+keystore.properties
