@@ -7,6 +7,8 @@ import com.tapp.sdk.library.network.ITappAssetRemoteDataSource
 import com.tapp.sdk.library.network.ITappConfigurationRemoteDataSource
 import com.tapp.sdk.library.network.OkHttpTappAssetRemoteDataSource
 import com.tapp.sdk.library.network.OkHttpTappConfigurationRemoteDataSource
+import com.tapp.sdk.library.storage.FileTappAssetStorage
+import com.tapp.sdk.library.storage.ITappAssetStorage
 import com.tapp.sdk.library.storage.ITappWidgetConfigurationStorage
 import com.tapp.sdk.library.storage.ITappConfigurationStorage
 import com.tapp.sdk.library.storage.InMemoryTappWidgetConfigurationStorage
@@ -32,6 +34,10 @@ internal object TappSdkDiContainer {
 
     val assetRemoteDataSource: ITappAssetRemoteDataSource by lazy {
         OkHttpTappAssetRemoteDataSource(okHttpClient)
+    }
+
+    val assetStorage: ITappAssetStorage by lazy {
+        FileTappAssetStorage(requireNotNull(applicationContext))
     }
 
     private val configurationStorage: ITappConfigurationStorage = InMemoryTappConfigurationStorage

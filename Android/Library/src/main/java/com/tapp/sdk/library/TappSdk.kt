@@ -43,26 +43,36 @@ object TappSdk {
     }
 
     private suspend fun downloadConfigurationAssets(configuration: TappConfiguration) {
-        val assetUrls = configuration.toTappAssetUrls()
+        val assets = configuration.toTappAssets()
 
-        if (assetUrls.isEmpty()) {
+        if (assets.isEmpty()) {
             logD("no remote assets to download")
             return
         }
 
-        assetUrls.forEach { assetUrl ->
+        assets.forEach { asset ->
             runCatching {
-                TappSdkDiContainer.assetRemoteDataSource.fetchAssetBytes(assetUrl)
-            }.onSuccess { assetBytes ->
-                logD("asset downloaded: sizeBytes=${assetBytes.size}, url=$assetUrl")
+                val assetBytes = TappSdkDiContainer.assetRemoteDataSource.fetchAssetBytes(asset.url)
+                TappSdkDiContainer.assetStorage.saveAsset(
+                    experienceId = asset.experienceId,
+                    fileName = asset.fileName,
+                    bytes = assetBytes
+                ) to assetBytes.size
+            }.onSuccess { (assetFile, assetSizeBytes) ->
+                logD(
+                    "asset saved: " +
+                        "fileName=${asset.fileName}, " +
+                        "sizeBytes=$assetSizeBytes, " +
+                        "localPath=${assetFile.absolutePath}"
+                )
             }.onFailure { throwable ->
-                logD("failed to download asset: url=$assetUrl", throwable)
+                logD("failed to download asset: url=${asset.url}", throwable)
             }
         }
     }
 
-    private fun TappConfiguration.toTappAssetUrls(): List<String> {
-        val assetUrls = mutableListOf<String>()
+    private fun TappConfiguration.toTappAssets(): List<TappAsset> {
+        val assets = mutableListOf<TappAsset>()
 
         data.forEach { experience ->
             if (
@@ -75,14 +85,36 @@ object TappSdk {
             val assetHost = experience.network?.assets?.host ?: return@forEach
             val wheelAssets = experience.wheel?.assets ?: return@forEach
 
-            assetUrls += listOf(
-                assetHost + wheelAssets.background,
-                assetHost + wheelAssets.wheelFrame,
-                assetHost + wheelAssets.wheelSpin,
-                assetHost + wheelAssets.wheel
+            assets += listOf(
+                TappAsset(
+                    experienceId = experience.id,
+                    fileName = wheelAssets.background,
+                    url = assetHost + wheelAssets.background
+                ),
+                TappAsset(
+                    experienceId = experience.id,
+                    fileName = wheelAssets.wheelFrame,
+                    url = assetHost + wheelAssets.wheelFrame
+                ),
+                TappAsset(
+                    experienceId = experience.id,
+                    fileName = wheelAssets.wheelSpin,
+                    url = assetHost + wheelAssets.wheelSpin
+                ),
+                TappAsset(
+                    experienceId = experience.id,
+                    fileName = wheelAssets.wheel,
+                    url = assetHost + wheelAssets.wheel
+                )
             )
         }
 
-        return assetUrls
+        return assets
     }
+
+    private data class TappAsset(
+        val experienceId: String,
+        val fileName: String,
+        val url: String
+    )
 }
