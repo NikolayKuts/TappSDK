@@ -113,6 +113,7 @@ ReactNative/tapp-sdk-react-native/.gitignore
 
 # Local planning and assignment notes
 Android/ARCHITECTURE.md
+Android/ANDROID_ASSIGNMENT_COVERAGE.md
 Android/WIDGET_CONFIGURATION_IMPLEMENTATION_NOTES.md
 Tapp Assignment.txt
 tapp_widget_config.txt
