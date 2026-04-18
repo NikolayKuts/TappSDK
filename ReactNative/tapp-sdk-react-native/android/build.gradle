@@ -1,9 +1,10 @@
 buildscript {
   ext.TappSdkReactNative = [
     kotlinVersion: "2.0.21",
-    minSdkVersion: 24,
+    minSdkVersion: 26,
     compileSdkVersion: 36,
-    targetSdkVersion: 36
+    targetSdkVersion: 36,
+    tappAndroidSdkVersion: "0.1.0"
   ]
 
   ext.getExtOrDefault = { prop ->
@@ -31,6 +32,12 @@ apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 apply plugin: "com.facebook.react"
+
+repositories {
+  mavenLocal()
+  google()
+  mavenCentral()
+}
 
 android {
   namespace "com.tappsdkreactnative"
@@ -64,4 +71,5 @@ android {
 
 dependencies {
   implementation "com.facebook.react:react-android"
+  implementation "com.tapp.sdk:tapp-sdk-android:${getExtOrDefault('tappAndroidSdkVersion')}"
 }

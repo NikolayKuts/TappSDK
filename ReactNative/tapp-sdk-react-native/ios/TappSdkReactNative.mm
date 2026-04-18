@@ -1,10 +1,8 @@
 #import "TappSdkReactNative.h"
 
 @implementation TappSdkReactNative
-- (NSNumber *)multiply:(double)a b:(double)b {
-    NSNumber *result = @(a * b);
-
-    return result;
+- (void)initialize:(NSString *)configurationUrl {
+    (void)configurationUrl;
 }
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:

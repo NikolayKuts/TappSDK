@@ -9,16 +9,24 @@ React Native wrapper for the Tapp Android SDK.
 npm install tapp-sdk-react-native
 ```
 
+For Android local development, publish the Android SDK first:
+
+```sh
+./gradlew :Library:publishTappSdkToMavenLocal
+```
+
+The Android app that consumes this package must resolve dependencies from `mavenLocal()`.
+
 
 ## Usage
 
 
-```js
-import { multiply } from 'tapp-sdk-react-native';
+```ts
+import { TappSdk } from 'tapp-sdk-react-native';
 
 // ...
 
-const result = multiply(3, 7);
+TappSdk.initialize('https://example.com/tapp-config.json');
 ```
 
 

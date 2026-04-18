@@ -1,1 +1,1 @@
-export { multiply } from './multiply';
+export { TappSdk } from './library/TappSdk';

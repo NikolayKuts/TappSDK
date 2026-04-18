@@ -1,5 +1,6 @@
 const childProcess = require('child_process');
 const fileSystem = require('fs');
+const http = require('http');
 const net = require('net');
 const path = require('path');
 
@@ -35,7 +36,8 @@ const runAndroidArguments = ['run-android', ...process.argv.slice(2)];
 
 function hasArgument(argumentName) {
   return runAndroidArguments.some(
-    (argument) => argument === argumentName || argument.startsWith(`${argumentName}=`)
+    (argument) =>
+      argument === argumentName || argument.startsWith(`${argumentName}=`)
   );
 }
 
@@ -62,11 +64,46 @@ function isPortAcceptingConnections(port) {
   });
 }
 
+function isMetroRunning(port) {
+  return new Promise((resolve) => {
+    const request = http.get(
+      {
+        host: '127.0.0.1',
+        port,
+        path: '/status',
+        timeout: 500,
+      },
+      (response) => {
+        let responseBody = '';
+
+        response.on('data', (chunk) => {
+          responseBody += chunk;
+        });
+
+        response.on('end', () => {
+          resolve(responseBody.includes('packager-status:running'));
+        });
+      }
+    );
+
+    request.on('error', () => {
+      resolve(false);
+    });
+
+    request.on('timeout', () => {
+      request.destroy();
+      resolve(false);
+    });
+  });
+}
+
 async function runAndroid() {
   if (!hasArgument('--no-packager') && !hasArgument('--port')) {
     const isDefaultMetroPortInUse = await isPortAcceptingConnections(8081);
+    const isDefaultMetroRunning =
+      isDefaultMetroPortInUse && (await isMetroRunning(8081));
 
-    if (isDefaultMetroPortInUse) {
+    if (isDefaultMetroRunning) {
       runAndroidArguments.push('--no-packager');
     }
   }
