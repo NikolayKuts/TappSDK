@@ -3,7 +3,9 @@ package com.tapp.sdk.library.internal
 import android.content.Context
 import com.tapp.sdk.library.data.repository.DefaultTappConfigurationRepository
 import com.tapp.sdk.library.domain.repository.ITappConfigurationRepository
+import com.tapp.sdk.library.network.ITappAssetRemoteDataSource
 import com.tapp.sdk.library.network.ITappConfigurationRemoteDataSource
+import com.tapp.sdk.library.network.OkHttpTappAssetRemoteDataSource
 import com.tapp.sdk.library.network.OkHttpTappConfigurationRemoteDataSource
 import com.tapp.sdk.library.storage.ITappWidgetConfigurationStorage
 import com.tapp.sdk.library.storage.ITappConfigurationStorage
@@ -26,6 +28,10 @@ internal object TappSdkDiContainer {
 
     private val configurationRemoteDataSource: ITappConfigurationRemoteDataSource by lazy {
         OkHttpTappConfigurationRemoteDataSource(okHttpClient)
+    }
+
+    val assetRemoteDataSource: ITappAssetRemoteDataSource by lazy {
+        OkHttpTappAssetRemoteDataSource(okHttpClient)
     }
 
     private val configurationStorage: ITappConfigurationStorage = InMemoryTappConfigurationStorage
