@@ -44,7 +44,9 @@ key.properties
 keystore.properties
 
 # JavaScript / React Native dependencies
+node_modules/
 **/node_modules/
+**/node_modules/**
 **/npm-debug.log
 **/yarn-debug.log
 **/yarn-error.log
@@ -52,21 +54,33 @@ keystore.properties
 
 # Yarn Berry generated files
 **/.yarn/*
+**/.yarn/**
 !**/.yarn/releases/
 !**/.yarn/releases/**
 
 # React Native generated files
 **/.expo/
+**/.expo/**
 **/.bundle/
+**/.bundle/**
 **/.turbo/
+**/.turbo/**
 **/.buckd/
+**/.buckd/**
 **/buck-out/
+**/buck-out/**
 **/lib/
+**/lib/**
 **/coverage/
+**/coverage/**
 **/android/generated/
+**/android/generated/**
 **/ios/generated/
+**/ios/generated/**
 **/nitrogen/
+**/nitrogen/**
 **/android/app/libs/
+**/android/app/libs/**
 **/android/keystores/debug.keystore
 ReactNative/tapp-sdk-react-native/jsconfig.json
 ReactNative/tapp-sdk-react-native/example/vendor/

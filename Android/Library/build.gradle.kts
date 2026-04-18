@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
+    `maven-publish`
 }
 
 android {
@@ -22,6 +23,37 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = "com.tapp.sdk"
+            artifactId = "tapp-sdk-android"
+            version = "0.1.0"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+
+            pom {
+                name.set("Tapp Android SDK")
+                description.set("Android SDK for Tapp surfaces and widgets.")
+            }
+        }
+    }
+}
+
+tasks.register("publishTappSdkToMavenLocal") {
+    group = "publishing"
+    description = "Publishes the Tapp Android SDK release artifact to Maven Local."
+    dependsOn("publishReleasePublicationToMavenLocal")
 }
 
 dependencies {
