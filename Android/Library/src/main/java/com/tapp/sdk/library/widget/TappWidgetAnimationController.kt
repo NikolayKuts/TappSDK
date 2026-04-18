@@ -1,25 +1,31 @@
 package com.tapp.sdk.library.widget
 
 import android.content.BroadcastReceiver
+import android.os.SystemClock
+import com.tapp.sdk.library.domain.TappSpinEasing
+import com.tapp.sdk.library.internal.logD
 import kotlin.random.Random
 
 internal object TappWidgetAnimationController {
 
-    private const val FRAME_COUNT = 60
-    private const val ANIMATION_DURATION_MILLISECONDS = 2_000L
-    private const val FRAME_DELAY_MILLISECONDS = ANIMATION_DURATION_MILLISECONDS / FRAME_COUNT
+    private const val TARGET_FRAMES_PER_SECOND = 20
+    private const val MILLISECONDS_IN_SECOND = 1_000L
+    private const val FRAME_DELAY_MILLISECONDS =
+        MILLISECONDS_IN_SECOND / TARGET_FRAMES_PER_SECOND
     private const val DEGREES_IN_FULL_SPIN = 360f
-    private const val MINIMUM_SPINS = 3f
-    private const val MAXIMUM_SPINS = 5f
 
     fun startSpinAnimation(
         appWidgetIdentifier: Int,
+        animationConfiguration: TappWidgetSpinAnimationConfiguration,
         pendingResult: BroadcastReceiver.PendingResult,
         updateTappWidget: (wheelRotationDegrees: Float) -> Unit
     ) {
         Thread {
             try {
-                animateSpin(updateTappWidget)
+                animateSpin(
+                    animationConfiguration = animationConfiguration,
+                    updateTappWidget = updateTappWidget
+                )
             } finally {
                 pendingResult.finish()
             }
@@ -30,28 +36,78 @@ internal object TappWidgetAnimationController {
     }
 
     private fun animateSpin(
+        animationConfiguration: TappWidgetSpinAnimationConfiguration,
         updateTappWidget: (wheelRotationDegrees: Float) -> Unit
     ) {
-        val totalRotationDegrees = calculateTotalRotationDegrees()
+        val durationMilliseconds = animationConfiguration.durationMilliseconds
+            .coerceAtLeast(FRAME_DELAY_MILLISECONDS)
+        val startTimeMilliseconds = SystemClock.uptimeMillis()
+        val endTimeMilliseconds = startTimeMilliseconds + durationMilliseconds
+        val totalRotationDegrees = calculateTotalRotationDegrees(animationConfiguration)
+        val estimatedFrameCount = durationMilliseconds / FRAME_DELAY_MILLISECONDS
 
-        repeat(FRAME_COUNT) { frameIndex ->
-            val progress = (frameIndex + 1).toFloat() / FRAME_COUNT
-            val easedProgress = calculateEaseInOutCubicProgress(progress)
+        logD(
+            "animateSpin: durationMilliseconds=$durationMilliseconds, " +
+                "targetFramesPerSecond=$TARGET_FRAMES_PER_SECOND, " +
+                "estimatedFrameCount=$estimatedFrameCount"
+        )
+
+        while (SystemClock.uptimeMillis() < endTimeMilliseconds) {
+            val elapsedMilliseconds = SystemClock.uptimeMillis() - startTimeMilliseconds
+            val progress = (elapsedMilliseconds.toFloat() / durationMilliseconds)
+                .coerceIn(0f, 1f)
+            val easedProgress = calculateEasedProgress(
+                progress = progress,
+                spinEasing = animationConfiguration.spinEasing
+            )
             val wheelRotationDegrees = totalRotationDegrees * easedProgress
 
             updateTappWidget(wheelRotationDegrees)
 
-            if (frameIndex < FRAME_COUNT - 1) {
-                Thread.sleep(FRAME_DELAY_MILLISECONDS)
-            }
+            sleepUntilNextFrame(endTimeMilliseconds)
+        }
+
+        updateTappWidget(totalRotationDegrees)
+    }
+
+    private fun sleepUntilNextFrame(endTimeMilliseconds: Long) {
+        val remainingMilliseconds = endTimeMilliseconds - SystemClock.uptimeMillis()
+        val sleepMilliseconds = minOf(FRAME_DELAY_MILLISECONDS, remainingMilliseconds)
+            .coerceAtLeast(0L)
+
+        if (sleepMilliseconds > 0L) {
+            Thread.sleep(sleepMilliseconds)
         }
     }
 
-    private fun calculateTotalRotationDegrees(): Float {
-        val spinCount = Random.nextFloat() *
-            (MAXIMUM_SPINS - MINIMUM_SPINS) + MINIMUM_SPINS
+    private fun calculateTotalRotationDegrees(
+        animationConfiguration: TappWidgetSpinAnimationConfiguration
+    ): Float {
+        val minimumSpins = minOf(
+            animationConfiguration.minimumSpins,
+            animationConfiguration.maximumSpins
+        )
+        val maximumSpins = maxOf(
+            animationConfiguration.minimumSpins,
+            animationConfiguration.maximumSpins
+        )
+        val spinRange = maximumSpins - minimumSpins
+        val spinCount = if (spinRange == 0f) {
+            minimumSpins
+        } else {
+            Random.nextFloat() * spinRange + minimumSpins
+        }
 
         return spinCount * DEGREES_IN_FULL_SPIN
+    }
+
+    private fun calculateEasedProgress(
+        progress: Float,
+        spinEasing: TappSpinEasing
+    ): Float {
+        return when (spinEasing) {
+            TappSpinEasing.EaseInOutCubic -> calculateEaseInOutCubicProgress(progress)
+        }
     }
 
     private fun calculateEaseInOutCubicProgress(progress: Float): Float {

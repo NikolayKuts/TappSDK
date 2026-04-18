@@ -7,5 +7,5 @@ data class TappWheelRotationContract(
     val duration: Long? = null,
     val minimumSpins: Float? = null,
     val maximumSpins: Float? = null,
-    val spinEasing: String? = null
+    val spinEasing: TappSpinEasingContract? = null
 )

@@ -5,6 +5,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import com.tapp.sdk.library.internal.TappSdkDiContainer
+import com.tapp.sdk.library.internal.logD
 import com.tapp.sdk.library.widget.TappWidgetIntentFactory.hasSpinAction
 
 class TappWidgetProvider : AppWidgetProvider() {
@@ -32,10 +34,16 @@ class TappWidgetProvider : AppWidgetProvider() {
             val applicationContext = context.applicationContext
             val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
             val appWidgetIdentifier = intent.getClickedAppWidgetIdentifier() ?: return
+            val widgetConfiguration = TappSdkDiContainer.widgetConfigurationStorage
+                .getWidgetConfiguration(appWidgetIdentifier)
             val pendingResult = goAsync()
+            val animationConfiguration = widgetConfiguration.animationConfiguration
+
+            logD("onReceive: $animationConfiguration")
 
             TappWidgetAnimationController.startSpinAnimation(
                 appWidgetIdentifier = appWidgetIdentifier,
+                animationConfiguration = animationConfiguration,
                 pendingResult = pendingResult,
                 updateTappWidget = { wheelRotationDegrees ->
                     updateTappWidget(
@@ -64,6 +72,16 @@ class TappWidgetProvider : AppWidgetProvider() {
             appWidgetIdentifier = appWidgetIdentifier,
             wheelRotationDegrees = 0f
         )
+    }
+
+    override fun onDeleted(
+        context: Context,
+        appWidgetIdentifiers: IntArray
+    ) {
+        appWidgetIdentifiers.forEach { appWidgetIdentifier ->
+            TappSdkDiContainer.widgetConfigurationStorage
+                .removeWidgetConfiguration(appWidgetIdentifier)
+        }
     }
 
     private fun updateTappWidget(

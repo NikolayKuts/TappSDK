@@ -7,6 +7,7 @@ import com.tapp.sdk.library.data.contract.TappMetaContract
 import com.tapp.sdk.library.data.contract.TappNetworkAssetsContract
 import com.tapp.sdk.library.data.contract.TappNetworkAttributesContract
 import com.tapp.sdk.library.data.contract.TappNetworkContract
+import com.tapp.sdk.library.data.contract.TappSpinEasingContract
 import com.tapp.sdk.library.data.contract.TappSurfaceTypeContract
 import com.tapp.sdk.library.data.contract.TappWheelAssetsContract
 import com.tapp.sdk.library.data.contract.TappWheelContract
@@ -18,6 +19,7 @@ import com.tapp.sdk.library.domain.TappMeta
 import com.tapp.sdk.library.domain.TappNetwork
 import com.tapp.sdk.library.domain.TappNetworkAssets
 import com.tapp.sdk.library.domain.TappNetworkAttributes
+import com.tapp.sdk.library.domain.TappSpinEasing
 import com.tapp.sdk.library.domain.TappSurfaceType
 import com.tapp.sdk.library.domain.TappWheel
 import com.tapp.sdk.library.domain.TappWheelAssets
@@ -106,8 +108,14 @@ private fun TappWheelRotationContract.toDomain(): TappWheelRotation? {
         duration = duration ?: return null,
         minimumSpins = minimumSpins ?: return null,
         maximumSpins = maximumSpins ?: return null,
-        spinEasing = spinEasing ?: return null
+        spinEasing = spinEasing?.toDomain() ?: return null
     )
+}
+
+private fun TappSpinEasingContract.toDomain(): TappSpinEasing {
+    return when (this) {
+        TappSpinEasingContract.EaseInOutCubic -> TappSpinEasing.EaseInOutCubic
+    }
 }
 
 private fun TappWheelAssetsContract.toDomain(): TappWheelAssets? {

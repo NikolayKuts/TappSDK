@@ -8,6 +8,7 @@ internal object TappJsonConfigurationDecoder {
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
+        coerceInputValues = true
     }
 
     fun decode(configurationJson: String): TappConfigurationContract {
