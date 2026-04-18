@@ -14,9 +14,28 @@
 
     <ImageView
         android:id="@+id/tapp_widget_wheel_image"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="@dimen/tapp_widget_wheel_size"
+        android:layout_height="@dimen/tapp_widget_wheel_size"
+        android:layout_gravity="center"
+        android:scaleType="fitCenter"
+        android:translationY="@dimen/tapp_widget_content_offset_y" />
+
+    <ImageView
+        android:id="@+id/tapp_widget_wheel_frame_image"
+        android:layout_width="@dimen/tapp_widget_frame_size"
+        android:layout_height="@dimen/tapp_widget_frame_size"
+        android:layout_gravity="center"
+        android:scaleType="fitCenter"
+        android:src="@drawable/tapp_widget_wheel_frame"
+        android:translationY="@dimen/tapp_widget_content_offset_y" />
+
+    <ImageView
+        android:id="@+id/tapp_widget_spin_button_image"
+        android:layout_width="@dimen/tapp_widget_spin_button_width"
+        android:layout_height="@dimen/tapp_widget_spin_button_height"
+        android:layout_gravity="center"
         android:contentDescription="@string/tapp_widget_name"
-        android:padding="8dp"
-        android:scaleType="fitCenter" />
+        android:scaleType="fitCenter"
+        android:src="@drawable/tapp_widget_wheel_spin"
+        android:translationY="@dimen/tapp_widget_content_offset_y" />
 </FrameLayout>
