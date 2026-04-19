@@ -30,7 +30,19 @@ object TappSdk {
             }.onFailure {
                 logD("failed to fetch config", it)
             }
-                .getOrNull() ?: return@launch
+                .getOrNull()
+                ?: runCatching {
+                    TappSdkDiContainer.configurationRepository.getCachedConfiguration()
+                }.onFailure {
+                    logD("failed to read cached config", it)
+                }.getOrNull()
+                    ?.also { cachedConfiguration ->
+                        logD("using cached config: $cachedConfiguration")
+                    }
+                ?: run {
+                    logD("configuration unavailable")
+                    return@launch
+                }
 
             logD("initialize: $configuration")
 

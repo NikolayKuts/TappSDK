@@ -9,10 +9,10 @@ import com.tapp.sdk.library.network.OkHttpTappAssetRemoteDataSource
 import com.tapp.sdk.library.network.OkHttpTappConfigurationRemoteDataSource
 import com.tapp.sdk.library.storage.FileTappAssetStorage
 import com.tapp.sdk.library.storage.ITappAssetStorage
+import com.tapp.sdk.library.storage.ITappConfigurationLocalStorage
 import com.tapp.sdk.library.storage.ITappWidgetConfigurationStorage
-import com.tapp.sdk.library.storage.ITappConfigurationStorage
 import com.tapp.sdk.library.storage.InMemoryTappWidgetConfigurationStorage
-import com.tapp.sdk.library.storage.InMemoryTappConfigurationStorage
+import com.tapp.sdk.library.storage.SharedPreferencesTappConfigurationLocalStorage
 import okhttp3.OkHttpClient
 
 internal object TappSdkDiContainer {
@@ -40,7 +40,9 @@ internal object TappSdkDiContainer {
         FileTappAssetStorage(requireNotNull(applicationContext))
     }
 
-    private val configurationStorage: ITappConfigurationStorage = InMemoryTappConfigurationStorage
+    private val configurationLocalStorage: ITappConfigurationLocalStorage by lazy {
+        SharedPreferencesTappConfigurationLocalStorage(requireNotNull(applicationContext))
+    }
 
     val widgetConfigurationStorage: ITappWidgetConfigurationStorage =
         InMemoryTappWidgetConfigurationStorage
@@ -48,7 +50,7 @@ internal object TappSdkDiContainer {
     val configurationRepository: ITappConfigurationRepository by lazy {
         DefaultTappConfigurationRepository(
             remoteDataSource = configurationRemoteDataSource,
-            configurationStorage = configurationStorage
+            configurationLocalStorage = configurationLocalStorage
         )
     }
 }

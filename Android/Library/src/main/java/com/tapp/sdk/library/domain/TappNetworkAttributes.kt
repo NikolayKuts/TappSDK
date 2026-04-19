@@ -1,5 +1,8 @@
 package com.tapp.sdk.library.domain
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class TappNetworkAttributes(
     val refreshInterval: Long,
     val networkTimeout: Long,
