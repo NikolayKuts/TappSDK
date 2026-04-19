@@ -90,9 +90,16 @@ class TappWidgetProvider : AppWidgetProvider() {
         appWidgetIdentifier: Int,
         wheelRotationDegrees: Float
     ) {
+        val widgetConfiguration = TappSdkDiContainer.widgetConfigurationStorage
+            .getWidgetConfiguration(appWidgetIdentifier)
+        val widgetAssetFiles = TappWidgetAssetFileResolver.resolve(
+            widgetConfiguration = widgetConfiguration,
+            assetStorage = TappSdkDiContainer.assetStorage
+        )
         val remoteViews = TappWidgetRenderer.createRemoteViews(
             context = context,
             appWidgetIdentifier = appWidgetIdentifier,
+            widgetAssetFiles = widgetAssetFiles,
             wheelRotationDegrees = wheelRotationDegrees
         )
 

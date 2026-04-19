@@ -9,4 +9,9 @@ internal interface ITappAssetStorage {
         fileName: String,
         bytes: ByteArray
     ): File
+
+    fun getAssetFile(
+        experienceId: String,
+        fileName: String
+    ): File?
 }

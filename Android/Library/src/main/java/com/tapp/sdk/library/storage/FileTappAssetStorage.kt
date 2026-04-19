@@ -23,6 +23,17 @@ internal class FileTappAssetStorage(
         return assetFile
     }
 
+    override fun getAssetFile(
+        experienceId: String,
+        fileName: String
+    ): File? {
+        val assetFile = File(File(assetsDirectory, experienceId), fileName)
+
+        return assetFile.takeIf {
+            it.isFile
+        }
+    }
+
     private companion object {
 
         const val ASSETS_DIRECTORY_PATH = "tapp/assets"
