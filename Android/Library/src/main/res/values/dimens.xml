@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="tapp_widget_min_width">180dp</dimen>
+    <dimen name="tapp_widget_min_height">120dp</dimen>
+    <dimen name="tapp_widget_frame_size">190dp</dimen>
+    <dimen name="tapp_widget_wheel_size">154dp</dimen>
+    <dimen name="tapp_widget_spin_button_width">64dp</dimen>
+    <dimen name="tapp_widget_spin_button_height">68dp</dimen>
+    <dimen name="tapp_widget_content_offset_y">2dp</dimen>
+</resources>
