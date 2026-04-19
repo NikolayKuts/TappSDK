@@ -14,13 +14,20 @@ internal class OkHttpTappAssetRemoteDataSource(
     private val okHttpClient: OkHttpClient
 ) : ITappAssetRemoteDataSource {
 
-    override suspend fun fetchAssetBytes(assetUrl: String): ByteArray {
+    override suspend fun fetchAssetBytes(
+        assetUrl: String,
+        requestConfiguration: TappNetworkRequestConfiguration
+    ): ByteArray {
         val request = Request.Builder()
             .url(assetUrl)
             .get()
             .build()
 
-        return okHttpClient.newCall(request).awaitByteArray()
+        val configuredOkHttpClient = okHttpClient.withRequestConfiguration(requestConfiguration)
+
+        return requestConfiguration.executeWithRetry("fetch asset") {
+            configuredOkHttpClient.newCall(request).awaitByteArray()
+        }
     }
 
     private suspend fun Call.awaitByteArray(): ByteArray = suspendCancellableCoroutine { continuation ->
@@ -37,7 +44,10 @@ internal class OkHttpTappAssetRemoteDataSource(
                     response.use {
                         if (!response.isSuccessful) {
                             continuation.resumeWithException(
-                                IOException("Failed to fetch asset: ${response.code}")
+                                TappHttpException(
+                                    statusCode = response.code,
+                                    message = "Failed to fetch asset: ${response.code}"
+                                )
                             )
                             return
                         }

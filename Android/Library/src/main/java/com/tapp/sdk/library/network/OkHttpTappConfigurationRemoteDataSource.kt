@@ -14,13 +14,20 @@ internal class OkHttpTappConfigurationRemoteDataSource(
     private val okHttpClient: OkHttpClient
 ) : ITappConfigurationRemoteDataSource {
 
-    override suspend fun fetchConfigurationJson(configurationUrl: String): String {
+    override suspend fun fetchConfigurationJson(
+        configurationUrl: String,
+        requestConfiguration: TappNetworkRequestConfiguration
+    ): String {
         val request = Request.Builder()
             .url(configurationUrl)
             .get()
             .build()
 
-        return okHttpClient.newCall(request).awaitString()
+        val configuredOkHttpClient = okHttpClient.withRequestConfiguration(requestConfiguration)
+
+        return requestConfiguration.executeWithRetry("fetch configuration") {
+            configuredOkHttpClient.newCall(request).awaitString()
+        }
     }
 
     private suspend fun Call.awaitString(): String = suspendCancellableCoroutine { continuation ->
@@ -37,7 +44,10 @@ internal class OkHttpTappConfigurationRemoteDataSource(
                     response.use {
                         if (!response.isSuccessful) {
                             continuation.resumeWithException(
-                                IOException("Failed to fetch configuration: ${response.code}")
+                                TappHttpException(
+                                    statusCode = response.code,
+                                    message = "Failed to fetch configuration: ${response.code}"
+                                )
                             )
                             return
                         }

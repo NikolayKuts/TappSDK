@@ -7,4 +7,6 @@ interface ITappConfigurationRepository {
     suspend fun fetchConfiguration(configurationUrl: String): TappConfiguration
 
     suspend fun getCachedConfiguration(): TappConfiguration?
+
+    suspend fun getConfigurationFetchedAtMillis(): Long?
 }

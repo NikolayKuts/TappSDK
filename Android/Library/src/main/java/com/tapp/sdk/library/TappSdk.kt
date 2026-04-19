@@ -1,6 +1,7 @@
 package com.tapp.sdk.library
 
 import android.content.Context
+import com.tapp.sdk.library.data.mapper.toTappNetworkRequestConfiguration
 import com.tapp.sdk.library.domain.TappConfiguration
 import com.tapp.sdk.library.domain.TappContentViewType
 import com.tapp.sdk.library.domain.TappSurfaceType
@@ -14,6 +15,10 @@ import kotlinx.coroutines.launch
 
 object TappSdk {
 
+    private const val DEFAULT_REFRESH_INTERVAL_SECONDS = 300L
+    private const val DEFAULT_CACHE_EXPIRATION_SECONDS = 3_600L
+    private const val MILLISECONDS_IN_SECOND = 1_000L
+
     private val sdkCoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun initialize(
@@ -23,26 +28,15 @@ object TappSdk {
         TappSdkDiContainer.initialize(context.applicationContext)
 
         sdkCoroutineScope.launch {
-            val configuration = runCatching {
-                val config = TappSdkDiContainer.configurationRepository.fetchConfiguration(configurationUrl)
-                logD("fetched config: $config")
-                config
-            }.onFailure {
-                logD("failed to fetch config", it)
+            val initializationResult = loadConfiguration(configurationUrl)
+
+            if (initializationResult == null) {
+                logD("configuration unavailable, using default widget configuration")
+                TappSdkDiContainer.widgetConfigurationStorage.saveAvailableWidgetConfigurations(emptyList())
+                return@launch
             }
-                .getOrNull()
-                ?: runCatching {
-                    TappSdkDiContainer.configurationRepository.getCachedConfiguration()
-                }.onFailure {
-                    logD("failed to read cached config", it)
-                }.getOrNull()
-                    ?.also { cachedConfiguration ->
-                        logD("using cached config: $cachedConfiguration")
-                    }
-                ?: run {
-                    logD("configuration unavailable")
-                    return@launch
-                }
+
+            val configuration = initializationResult.configuration
 
             logD("initialize: $configuration")
 
@@ -50,12 +44,90 @@ object TappSdk {
                 configuration.toTappWidgetConfigurations()
             )
 
-            downloadConfigurationAssets(configuration)
+            if (initializationResult.shouldDownloadAssets) {
+                downloadConfigurationAssets(configuration)
+            }
         }
+    }
+
+    private suspend fun loadConfiguration(
+        configurationUrl: String
+    ): TappConfigurationInitializationResult? {
+        val cachedConfiguration = readCachedConfiguration()
+        val configurationFetchedAtMillis = readConfigurationFetchedAtMillis()
+        val currentTimeMillis = System.currentTimeMillis()
+
+        if (
+            cachedConfiguration != null &&
+            configurationFetchedAtMillis != null &&
+            cachedConfiguration.isRefreshIntervalActive(
+                configurationFetchedAtMillis = configurationFetchedAtMillis,
+                currentTimeMillis = currentTimeMillis
+            )
+        ) {
+            logD("using cached config: refresh interval is active")
+            return TappConfigurationInitializationResult(
+                configuration = cachedConfiguration,
+                shouldDownloadAssets = false
+            )
+        }
+
+        val remoteConfiguration = runCatching {
+            TappSdkDiContainer.configurationRepository.fetchConfiguration(configurationUrl)
+        }.onSuccess { configuration ->
+            logD("fetched config: $configuration")
+        }.onFailure { throwable ->
+            logD("failed to fetch config", throwable)
+        }.getOrNull()
+
+        if (remoteConfiguration != null) {
+            return TappConfigurationInitializationResult(
+                configuration = remoteConfiguration,
+                shouldDownloadAssets = true
+            )
+        }
+
+        if (
+            cachedConfiguration != null &&
+            configurationFetchedAtMillis != null &&
+            !cachedConfiguration.isCacheExpired(
+                configurationFetchedAtMillis = configurationFetchedAtMillis,
+                currentTimeMillis = currentTimeMillis
+            )
+        ) {
+            logD("using cached config after failed fetch: $cachedConfiguration")
+            return TappConfigurationInitializationResult(
+                configuration = cachedConfiguration,
+                shouldDownloadAssets = false
+            )
+        }
+
+        if (cachedConfiguration != null) {
+            logD("cached config expired")
+        }
+
+        return null
+    }
+
+    private suspend fun readCachedConfiguration(): TappConfiguration? {
+        return runCatching {
+            TappSdkDiContainer.configurationRepository.getCachedConfiguration()
+        }.onFailure { throwable ->
+            logD("failed to read cached config", throwable)
+        }.getOrNull()
+    }
+
+    private suspend fun readConfigurationFetchedAtMillis(): Long? {
+        return runCatching {
+            TappSdkDiContainer.configurationRepository.getConfigurationFetchedAtMillis()
+        }.onFailure { throwable ->
+            logD("failed to read configuration fetch time", throwable)
+        }.getOrNull()
     }
 
     private suspend fun downloadConfigurationAssets(configuration: TappConfiguration) {
         val assets = configuration.toTappAssets()
+        val requestConfiguration = configuration.toTappNetworkRequestConfiguration()
 
         if (assets.isEmpty()) {
             logD("no remote assets to download")
@@ -64,7 +136,10 @@ object TappSdk {
 
         assets.forEach { asset ->
             runCatching {
-                val assetBytes = TappSdkDiContainer.assetRemoteDataSource.fetchAssetBytes(asset.url)
+                val assetBytes = TappSdkDiContainer.assetRemoteDataSource.fetchAssetBytes(
+                    assetUrl = asset.url,
+                    requestConfiguration = requestConfiguration
+                )
                 TappSdkDiContainer.assetStorage.saveAsset(
                     experienceId = asset.experienceId,
                     fileName = asset.fileName,
@@ -129,4 +204,50 @@ object TappSdk {
         val fileName: String,
         val url: String
     )
+
+    private data class TappConfigurationInitializationResult(
+        val configuration: TappConfiguration,
+        val shouldDownloadAssets: Boolean
+    )
+
+    private fun TappConfiguration.isRefreshIntervalActive(
+        configurationFetchedAtMillis: Long,
+        currentTimeMillis: Long
+    ): Boolean {
+        return currentTimeMillis - configurationFetchedAtMillis <
+            refreshIntervalMilliseconds()
+    }
+
+    private fun TappConfiguration.isCacheExpired(
+        configurationFetchedAtMillis: Long,
+        currentTimeMillis: Long
+    ): Boolean {
+        return currentTimeMillis - configurationFetchedAtMillis >
+            cacheExpirationMilliseconds()
+    }
+
+    private fun TappConfiguration.refreshIntervalMilliseconds(): Long {
+        return networkRefreshIntervalSeconds().secondsToMilliseconds()
+    }
+
+    private fun TappConfiguration.cacheExpirationMilliseconds(): Long {
+        return networkCacheExpirationSeconds().secondsToMilliseconds()
+    }
+
+    private fun TappConfiguration.networkRefreshIntervalSeconds(): Long {
+        return firstNetworkAttributes()?.refreshInterval
+            ?: DEFAULT_REFRESH_INTERVAL_SECONDS
+    }
+
+    private fun TappConfiguration.networkCacheExpirationSeconds(): Long {
+        return firstNetworkAttributes()?.cacheExpiration
+            ?: DEFAULT_CACHE_EXPIRATION_SECONDS
+    }
+
+    private fun TappConfiguration.firstNetworkAttributes() = data
+        .firstNotNullOfOrNull { experience -> experience.network?.attributes }
+
+    private fun Long.secondsToMilliseconds(): Long {
+        return coerceAtLeast(0L) * MILLISECONDS_IN_SECOND
+    }
 }

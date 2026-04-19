@@ -1,6 +1,7 @@
 package com.tapp.sdk.library.data.repository
 
 import com.tapp.sdk.library.data.mapper.toDomain
+import com.tapp.sdk.library.data.mapper.toTappNetworkRequestConfiguration
 import com.tapp.sdk.library.data.serialization.TappJsonConfigurationDecoder
 import com.tapp.sdk.library.domain.TappConfiguration
 import com.tapp.sdk.library.domain.repository.ITappConfigurationRepository
@@ -14,7 +15,12 @@ internal class DefaultTappConfigurationRepository(
 ) : ITappConfigurationRepository {
 
     override suspend fun fetchConfiguration(configurationUrl: String): TappConfiguration {
-        val configurationJson = remoteDataSource.fetchConfigurationJson(configurationUrl)
+        val requestConfiguration = configurationLocalStorage.cachedConfiguration
+            .toTappNetworkRequestConfiguration()
+        val configurationJson = remoteDataSource.fetchConfigurationJson(
+            configurationUrl = configurationUrl,
+            requestConfiguration = requestConfiguration
+        )
         val configuration = jsonConfigurationDecoder
             .decode(configurationJson)
             .toDomain()
@@ -27,5 +33,9 @@ internal class DefaultTappConfigurationRepository(
 
     override suspend fun getCachedConfiguration(): TappConfiguration? {
         return configurationLocalStorage.cachedConfiguration
+    }
+
+    override suspend fun getConfigurationFetchedAtMillis(): Long? {
+        return configurationLocalStorage.configurationFetchedAtMillis
     }
 }
