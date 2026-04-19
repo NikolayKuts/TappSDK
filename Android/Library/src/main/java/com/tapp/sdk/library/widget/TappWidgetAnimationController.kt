@@ -5,6 +5,14 @@ import android.os.SystemClock
 import com.tapp.sdk.library.domain.TappSpinEasing
 import com.tapp.sdk.library.internal.logD
 import kotlin.random.Random
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 internal object TappWidgetAnimationController {
 
@@ -13,6 +21,9 @@ internal object TappWidgetAnimationController {
     private const val FRAME_DELAY_MILLISECONDS =
         MILLISECONDS_IN_SECOND / TARGET_FRAMES_PER_SECOND
     private const val DEGREES_IN_FULL_SPIN = 360f
+    private val animationCoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val animationJobsLock = Any()
+    private val animationJobsByAppWidgetIdentifier = mutableMapOf<Int, Job>()
 
     fun startSpinAnimation(
         appWidgetIdentifier: Int,
@@ -20,22 +31,56 @@ internal object TappWidgetAnimationController {
         pendingResult: BroadcastReceiver.PendingResult,
         updateTappWidget: (wheelRotationDegrees: Float) -> Unit
     ) {
-        Thread {
+        var previousAnimationJob: Job? = null
+
+        val currentAnimationJob = animationCoroutineScope.launch(start = CoroutineStart.LAZY) {
             try {
+                previousAnimationJob.cancelIfActive()
                 animateSpin(
                     animationConfiguration = animationConfiguration,
                     updateTappWidget = updateTappWidget
                 )
             } finally {
                 pendingResult.finish()
+                removeAnimationJob(
+                    appWidgetIdentifier = appWidgetIdentifier,
+                    animationJob = coroutineContext[Job]
+                )
             }
-        }.apply {
-            name = "TappWidgetSpinAnimation-$appWidgetIdentifier"
-            start()
+        }
+
+        previousAnimationJob = replaceAnimationJob(
+            appWidgetIdentifier = appWidgetIdentifier,
+            animationJob = currentAnimationJob
+        )
+        currentAnimationJob.start()
+    }
+
+    private fun replaceAnimationJob(
+        appWidgetIdentifier: Int,
+        animationJob: Job
+    ): Job? {
+        return synchronized(animationJobsLock) {
+            animationJobsByAppWidgetIdentifier.put(appWidgetIdentifier, animationJob)
         }
     }
 
-    private fun animateSpin(
+    private suspend fun Job?.cancelIfActive() {
+        this?.cancelAndJoin()
+    }
+
+    private fun removeAnimationJob(
+        appWidgetIdentifier: Int,
+        animationJob: Job?
+    ) {
+        synchronized(animationJobsLock) {
+            if (animationJobsByAppWidgetIdentifier[appWidgetIdentifier] === animationJob) {
+                animationJobsByAppWidgetIdentifier.remove(appWidgetIdentifier)
+            }
+        }
+    }
+
+    private suspend fun animateSpin(
         animationConfiguration: TappWidgetSpinAnimationConfiguration,
         updateTappWidget: (wheelRotationDegrees: Float) -> Unit
     ) {
@@ -64,19 +109,19 @@ internal object TappWidgetAnimationController {
 
             updateTappWidget(wheelRotationDegrees)
 
-            sleepUntilNextFrame(endTimeMilliseconds)
+            delayUntilNextFrame(endTimeMilliseconds)
         }
 
         updateTappWidget(totalRotationDegrees)
     }
 
-    private fun sleepUntilNextFrame(endTimeMilliseconds: Long) {
+    private suspend fun delayUntilNextFrame(endTimeMilliseconds: Long) {
         val remainingMilliseconds = endTimeMilliseconds - SystemClock.uptimeMillis()
-        val sleepMilliseconds = minOf(FRAME_DELAY_MILLISECONDS, remainingMilliseconds)
+        val delayMilliseconds = minOf(FRAME_DELAY_MILLISECONDS, remainingMilliseconds)
             .coerceAtLeast(0L)
 
-        if (sleepMilliseconds > 0L) {
-            Thread.sleep(sleepMilliseconds)
+        if (delayMilliseconds > 0L) {
+            delay(delayMilliseconds)
         }
     }
 
