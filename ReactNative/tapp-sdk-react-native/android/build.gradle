@@ -4,7 +4,7 @@ buildscript {
     minSdkVersion: 26,
     compileSdkVersion: 36,
     targetSdkVersion: 36,
-    tappAndroidSdkVersion: "0.1.0"
+    tappAndroidSdkVersion: "0.2.0"
   ]
 
   ext.getExtOrDefault = { prop ->
