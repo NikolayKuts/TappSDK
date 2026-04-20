@@ -9515,8 +9515,19 @@ __metadata:
     react-native: "npm:0.85.0"
     react-native-builder-bob: "npm:^0.41.0"
     react-native-monorepo-config: "npm:^0.3.3"
+    tapp-sdk-react-native: "file:../tapp-sdk-react-native-0.1.0.tgz"
   languageName: unknown
   linkType: soft
+
+"tapp-sdk-react-native@file:../tapp-sdk-react-native-0.1.0.tgz::locator=tapp-sdk-react-native-example%40workspace%3Aexample":
+  version: 0.1.0
+  resolution: "tapp-sdk-react-native@file:../tapp-sdk-react-native-0.1.0.tgz#../tapp-sdk-react-native-0.1.0.tgz::hash=24bb9b&locator=tapp-sdk-react-native-example%40workspace%3Aexample"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/872c7dee534927c74e1e1e21a9a55fcee289d5604ecf7f48cb827c68940486de0009941567ebd44c9acd4d2c71bce6faeba23c584f80e7e9c69a62cdc252f96e
+  languageName: node
+  linkType: hard
 
 "tapp-sdk-react-native@workspace:.":
   version: 0.0.0-use.local
