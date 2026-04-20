@@ -9496,9 +9496,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tapp-sdk-react-native-example@workspace:example":
+"tapp-sdk-react-native-demo-app@workspace:example":
   version: 0.0.0-use.local
-  resolution: "tapp-sdk-react-native-example@workspace:example"
+  resolution: "tapp-sdk-react-native-demo-app@workspace:example"
   dependencies:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
@@ -9519,13 +9519,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"tapp-sdk-react-native@file:../tapp-sdk-react-native-0.1.0.tgz::locator=tapp-sdk-react-native-example%40workspace%3Aexample":
+"tapp-sdk-react-native@file:../tapp-sdk-react-native-0.1.0.tgz::locator=tapp-sdk-react-native-demo-app%40workspace%3Aexample":
   version: 0.1.0
-  resolution: "tapp-sdk-react-native@file:../tapp-sdk-react-native-0.1.0.tgz#../tapp-sdk-react-native-0.1.0.tgz::hash=24bb9b&locator=tapp-sdk-react-native-example%40workspace%3Aexample"
+  resolution: "tapp-sdk-react-native@file:../tapp-sdk-react-native-0.1.0.tgz#../tapp-sdk-react-native-0.1.0.tgz::hash=f222db&locator=tapp-sdk-react-native-demo-app%40workspace%3Aexample"
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 10c0/872c7dee534927c74e1e1e21a9a55fcee289d5604ecf7f48cb827c68940486de0009941567ebd44c9acd4d2c71bce6faeba23c584f80e7e9c69a62cdc252f96e
+  checksum: 10c0/f31eaf6a705c597aa5b927c7c88507368b25008b907419dceba0d38ebc853b24f59878fd4b76e1730c788c279190dfcf38be06f7d918214787494b2671d93210
   languageName: node
   linkType: hard
 

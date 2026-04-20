@@ -32,7 +32,8 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace tapp-sdk-react-native-example",
+    "demo": "yarn workspace tapp-sdk-react-native-demo-app",
+    "example": "yarn demo",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "prepare": "bob build",
     "typecheck": "tsc",
