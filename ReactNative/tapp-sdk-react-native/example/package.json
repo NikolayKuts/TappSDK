@@ -1,5 +1,5 @@
 {
-  "name": "tapp-sdk-react-native-example",
+  "name": "tapp-sdk-react-native-demo-app",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "react": "19.2.3",
-    "react-native": "0.85.0"
+    "react-native": "0.85.0",
+    "tapp-sdk-react-native": "file:../tapp-sdk-react-native-0.1.0.tgz"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

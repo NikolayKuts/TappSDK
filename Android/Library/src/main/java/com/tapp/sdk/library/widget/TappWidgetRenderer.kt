@@ -18,8 +18,6 @@ import java.io.File
 internal object TappWidgetRenderer {
 
     private const val BITMAP_CACHE_SIZE_BYTES = 8 * 1024 * 1024
-    private const val NEUTRAL_BACKGROUND_BITMAP_SIZE_PIXELS = 32
-    private const val NEUTRAL_WHEEL_BITMAP_SIZE_PIXELS = 500
     private const val FALLBACK_BITMAP_SIZE_PIXELS = 1
 
     private val bitmapCache = object : LruCache<String, Bitmap>(BITMAP_CACHE_SIZE_BYTES) {
@@ -51,6 +49,8 @@ internal object TappWidgetRenderer {
         widgetAssetFiles: TappWidgetAssetFiles,
         wheelRotationDegrees: Float
     ): RemoteViews {
+        val bitmapTargetSizes = TappWidgetBitmapTargetSizes.create(context)
+
         return RemoteViews(
             context.packageName,
             R.layout.tapp_widget_layout
@@ -59,6 +59,7 @@ internal object TappWidgetRenderer {
                 R.id.tapp_widget_background_image,
                 loadAssetBitmap(
                     assetFile = widgetAssetFiles.background,
+                    targetSize = bitmapTargetSizes.background,
                     fallbackBitmap = ::createNeutralBackgroundBitmap
                 )
             )
@@ -66,6 +67,7 @@ internal object TappWidgetRenderer {
                 R.id.tapp_widget_wheel_image,
                 createRotatedWheelBitmap(
                     assetFile = widgetAssetFiles.wheel,
+                    targetSize = bitmapTargetSizes.wheel,
                     wheelRotationDegrees = wheelRotationDegrees
                 )
             )
@@ -73,6 +75,7 @@ internal object TappWidgetRenderer {
                 R.id.tapp_widget_wheel_frame_image,
                 loadAssetBitmap(
                     assetFile = widgetAssetFiles.wheelFrame,
+                    targetSize = bitmapTargetSizes.frame,
                     fallbackBitmap = ::createNeutralWheelFrameBitmap
                 )
             )
@@ -80,10 +83,12 @@ internal object TappWidgetRenderer {
                 R.id.tapp_widget_spin_button_image,
                 loadAssetBitmap(
                     assetFile = widgetAssetFiles.wheelSpin,
-                    fallbackBitmap = {
+                    targetSize = bitmapTargetSizes.spinButton,
+                    fallbackBitmap = { targetSize ->
                         loadBitmap(
                             context = context,
-                            drawableResourceIdentifier = R.drawable.tapp_widget_wheel_spin
+                            drawableResourceIdentifier = R.drawable.tapp_widget_wheel_spin,
+                            targetSize = targetSize
                         )
                     }
                 )
@@ -100,10 +105,12 @@ internal object TappWidgetRenderer {
 
     private fun createRotatedWheelBitmap(
         assetFile: File?,
+        targetSize: TappWidgetBitmapTargetSize,
         wheelRotationDegrees: Float
     ): Bitmap {
         val wheelBitmap = loadAssetBitmap(
             assetFile = assetFile,
+            targetSize = targetSize,
             fallbackBitmap = ::createNeutralWheelBitmap
         ) ?: return createBitmap(
             width = FALLBACK_BITMAP_SIZE_PIXELS,
@@ -128,9 +135,15 @@ internal object TappWidgetRenderer {
 
     private fun loadAssetBitmap(
         assetFile: File?,
-        fallbackBitmap: () -> Bitmap?
+        targetSize: TappWidgetBitmapTargetSize,
+        fallbackBitmap: (TappWidgetBitmapTargetSize) -> Bitmap?
     ): Bitmap? {
-        val assetBitmap = assetFile?.let(::loadBitmap)
+        val assetBitmap = assetFile?.let { file ->
+            loadBitmap(
+                assetFile = file,
+                targetSize = targetSize
+            )
+        }
 
         if (assetFile != null && assetBitmap == null) {
             logD(
@@ -140,27 +153,27 @@ internal object TappWidgetRenderer {
             )
         }
 
-        return assetBitmap ?: fallbackBitmap()
+        return assetBitmap ?: fallbackBitmap(targetSize)
     }
 
-    private fun createNeutralBackgroundBitmap(): Bitmap {
-        return loadCachedBitmap("generated:neutralBackground") {
+    private fun createNeutralBackgroundBitmap(targetSize: TappWidgetBitmapTargetSize): Bitmap {
+        return loadCachedBitmap("generated:neutralBackground:${targetSize.cacheKey}") {
             createBitmap(
-                width = NEUTRAL_BACKGROUND_BITMAP_SIZE_PIXELS,
-                height = NEUTRAL_BACKGROUND_BITMAP_SIZE_PIXELS
+                width = targetSize.width,
+                height = targetSize.height
             ).apply {
                 eraseColor(Color.rgb(11, 18, 34))
             }
         } ?: createBitmap(width = FALLBACK_BITMAP_SIZE_PIXELS, height = FALLBACK_BITMAP_SIZE_PIXELS)
     }
 
-    private fun createNeutralWheelBitmap(): Bitmap {
-        return loadCachedBitmap("generated:neutralWheel") {
+    private fun createNeutralWheelBitmap(targetSize: TappWidgetBitmapTargetSize): Bitmap {
+        return loadCachedBitmap("generated:neutralWheel:${targetSize.cacheKey}") {
             createBitmap(
-                width = NEUTRAL_WHEEL_BITMAP_SIZE_PIXELS,
-                height = NEUTRAL_WHEEL_BITMAP_SIZE_PIXELS
+                width = targetSize.width,
+                height = targetSize.height
             ).apply {
-                val radius = width * 0.42f
+                val radius = minOf(width, height) * 0.42f
                 Canvas(this).drawCircle(
                     width / 2f,
                     height / 2f,
@@ -171,11 +184,11 @@ internal object TappWidgetRenderer {
         } ?: createBitmap(width = FALLBACK_BITMAP_SIZE_PIXELS, height = FALLBACK_BITMAP_SIZE_PIXELS)
     }
 
-    private fun createNeutralWheelFrameBitmap(): Bitmap {
-        return loadCachedBitmap("generated:neutralWheelFrame") {
+    private fun createNeutralWheelFrameBitmap(targetSize: TappWidgetBitmapTargetSize): Bitmap {
+        return loadCachedBitmap("generated:neutralWheelFrame:${targetSize.cacheKey}") {
             createBitmap(
-                width = NEUTRAL_WHEEL_BITMAP_SIZE_PIXELS,
-                height = NEUTRAL_WHEEL_BITMAP_SIZE_PIXELS
+                width = targetSize.width,
+                height = targetSize.height
             ).apply {
                 val padding = neutralWheelFramePaint.strokeWidth / 2f + 4f
                 Canvas(this).drawOval(
@@ -191,16 +204,33 @@ internal object TappWidgetRenderer {
         } ?: createBitmap(width = FALLBACK_BITMAP_SIZE_PIXELS, height = FALLBACK_BITMAP_SIZE_PIXELS)
     }
 
-    private fun loadBitmap(assetFile: File): Bitmap? {
-        val cacheKey = assetFile.toBitmapCacheKey()
+    private fun loadBitmap(
+        assetFile: File,
+        targetSize: TappWidgetBitmapTargetSize
+    ): Bitmap? {
+        val cacheKey = assetFile.toBitmapCacheKey(targetSize)
 
         return loadCachedBitmap(cacheKey) {
             runCatching {
-                BitmapFactory.decodeFile(
-                    assetFile.absolutePath,
-                    BitmapFactory.Options().apply {
-                        inScaled = false
-                    }
+                val boundsOptions = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+
+                BitmapFactory.decodeFile(assetFile.absolutePath, boundsOptions)
+
+                decodeScaledBitmap(
+                    sourceWidth = boundsOptions.outWidth,
+                    sourceHeight = boundsOptions.outHeight,
+                    decodeBitmap = { inSampleSize ->
+                        BitmapFactory.decodeFile(
+                            assetFile.absolutePath,
+                            BitmapFactory.Options().apply {
+                                this.inSampleSize = inSampleSize
+                                inScaled = false
+                            }
+                        )
+                    },
+                    targetSize = targetSize
                 )
             }.getOrNull()
         }
@@ -208,21 +238,94 @@ internal object TappWidgetRenderer {
 
     private fun loadBitmap(
         context: Context,
-        drawableResourceIdentifier: Int
+        drawableResourceIdentifier: Int,
+        targetSize: TappWidgetBitmapTargetSize
     ): Bitmap? {
-        val cacheKey = "drawable:$drawableResourceIdentifier"
+        val cacheKey = "drawable:$drawableResourceIdentifier:${targetSize.cacheKey}"
 
         return loadCachedBitmap(cacheKey) {
             runCatching {
+                val boundsOptions = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+
                 BitmapFactory.decodeResource(
                     context.resources,
                     drawableResourceIdentifier,
-                    BitmapFactory.Options().apply {
-                        inScaled = false
-                    }
+                    boundsOptions
+                )
+
+                decodeScaledBitmap(
+                    sourceWidth = boundsOptions.outWidth,
+                    sourceHeight = boundsOptions.outHeight,
+                    decodeBitmap = { inSampleSize ->
+                        BitmapFactory.decodeResource(
+                            context.resources,
+                            drawableResourceIdentifier,
+                            BitmapFactory.Options().apply {
+                                this.inSampleSize = inSampleSize
+                                inScaled = false
+                            }
+                        )
+                    },
+                    targetSize = targetSize
                 )
             }.getOrNull()
         }
+    }
+
+    private fun decodeScaledBitmap(
+        sourceWidth: Int,
+        sourceHeight: Int,
+        decodeBitmap: (Int) -> Bitmap?,
+        targetSize: TappWidgetBitmapTargetSize
+    ): Bitmap? {
+        val decodedBitmap = decodeBitmap(
+            calculateInSampleSize(
+                sourceWidth = sourceWidth,
+                sourceHeight = sourceHeight,
+                targetWidth = targetSize.width,
+                targetHeight = targetSize.height
+            )
+        ) ?: return null
+
+        if (
+            decodedBitmap.width == targetSize.width &&
+            decodedBitmap.height == targetSize.height
+        ) {
+            return decodedBitmap
+        }
+
+        val scaledBitmap = Bitmap.createScaledBitmap(
+            decodedBitmap,
+            targetSize.width,
+            targetSize.height,
+            true
+        )
+
+        decodedBitmap.recycle()
+
+        return scaledBitmap
+    }
+
+    private fun calculateInSampleSize(
+        sourceWidth: Int,
+        sourceHeight: Int,
+        targetWidth: Int,
+        targetHeight: Int
+    ): Int {
+        var inSampleSize = 1
+        var halfSourceWidth = sourceWidth / 2
+        var halfSourceHeight = sourceHeight / 2
+
+        while (
+            halfSourceWidth / inSampleSize >= targetWidth &&
+            halfSourceHeight / inSampleSize >= targetHeight
+        ) {
+            inSampleSize *= 2
+        }
+
+        return inSampleSize
     }
 
     private fun loadCachedBitmap(
@@ -246,7 +349,60 @@ internal object TappWidgetRenderer {
         return decodedBitmap
     }
 
-    private fun File.toBitmapCacheKey(): String {
-        return "file:$absolutePath:${lastModified()}:${length()}"
+    private fun File.toBitmapCacheKey(targetSize: TappWidgetBitmapTargetSize): String {
+        return "file:$absolutePath:${lastModified()}:${length()}:${targetSize.cacheKey}"
+    }
+
+    private data class TappWidgetBitmapTargetSizes(
+        val background: TappWidgetBitmapTargetSize,
+        val wheel: TappWidgetBitmapTargetSize,
+        val frame: TappWidgetBitmapTargetSize,
+        val spinButton: TappWidgetBitmapTargetSize
+    ) {
+
+        companion object {
+
+            fun create(context: Context): TappWidgetBitmapTargetSizes {
+                return TappWidgetBitmapTargetSizes(
+                    background = TappWidgetBitmapTargetSize(
+                        width = context.getDimensionPixels(R.dimen.tapp_widget_min_width),
+                        height = context.getDimensionPixels(R.dimen.tapp_widget_min_height)
+                    ),
+                    wheel = TappWidgetBitmapTargetSize.square(
+                        context.getDimensionPixels(R.dimen.tapp_widget_wheel_size)
+                    ),
+                    frame = TappWidgetBitmapTargetSize.square(
+                        context.getDimensionPixels(R.dimen.tapp_widget_frame_size)
+                    ),
+                    spinButton = TappWidgetBitmapTargetSize(
+                        width = context.getDimensionPixels(R.dimen.tapp_widget_spin_button_width),
+                        height = context.getDimensionPixels(R.dimen.tapp_widget_spin_button_height)
+                    )
+                )
+            }
+        }
+    }
+
+    private data class TappWidgetBitmapTargetSize(
+        val width: Int,
+        val height: Int
+    ) {
+
+        val cacheKey: String = "${width}x$height"
+
+        companion object {
+
+            fun square(size: Int): TappWidgetBitmapTargetSize {
+                return TappWidgetBitmapTargetSize(
+                    width = size,
+                    height = size
+                )
+            }
+        }
+    }
+
+    private fun Context.getDimensionPixels(dimensionResourceIdentifier: Int): Int {
+        return resources.getDimensionPixelSize(dimensionResourceIdentifier)
+            .coerceAtLeast(1)
     }
 }

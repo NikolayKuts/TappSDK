@@ -44,9 +44,10 @@ object TappSdk {
                 configuration.toTappWidgetConfigurations()
             )
 
-            if (initializationResult.shouldDownloadAssets) {
-                downloadConfigurationAssets(configuration)
-            }
+            downloadConfigurationAssets(
+                configuration = configuration,
+                forceDownload = initializationResult.shouldDownloadAssets
+            )
         }
     }
 
@@ -125,7 +126,10 @@ object TappSdk {
         }.getOrNull()
     }
 
-    private suspend fun downloadConfigurationAssets(configuration: TappConfiguration) {
+    private suspend fun downloadConfigurationAssets(
+        configuration: TappConfiguration,
+        forceDownload: Boolean
+    ) {
         val assets = configuration.toTappAssets()
         val requestConfiguration = configuration.toTappNetworkRequestConfiguration()
 
@@ -134,7 +138,19 @@ object TappSdk {
             return
         }
 
-        assets.forEach { asset ->
+        val assetsToDownload = assets.filter { asset ->
+            forceDownload || TappSdkDiContainer.assetStorage.getAssetFile(
+                experienceId = asset.experienceId,
+                fileName = asset.fileName
+            ) == null
+        }
+
+        if (assetsToDownload.isEmpty()) {
+            logD("all remote assets are already cached")
+            return
+        }
+
+        assetsToDownload.forEach { asset ->
             runCatching {
                 val assetBytes = TappSdkDiContainer.assetRemoteDataSource.fetchAssetBytes(
                     assetUrl = asset.url,

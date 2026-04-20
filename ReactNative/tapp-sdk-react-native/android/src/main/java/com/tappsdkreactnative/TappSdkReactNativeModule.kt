@@ -13,6 +13,9 @@ class TappSdkReactNativeModule(
   }
 
   override fun initialize(configurationUrl: String) {
-    TappSdk.initialize(reactApplicationContext, configurationUrl)
+    TappSdk.initialize(
+      context = reactApplicationContext,
+      configurationUrl = configurationUrl
+    )
   }
 }

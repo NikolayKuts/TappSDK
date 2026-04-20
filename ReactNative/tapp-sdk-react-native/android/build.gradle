@@ -4,7 +4,7 @@ buildscript {
     minSdkVersion: 26,
     compileSdkVersion: 36,
     targetSdkVersion: 36,
-    tappAndroidSdkVersion: "0.1.0"
+    tappAndroidSdkVersion: "0.2.0"
   ]
 
   ext.getExtOrDefault = { prop ->
@@ -71,5 +71,9 @@ android {
 
 dependencies {
   implementation "com.facebook.react:react-android"
-  implementation "com.tapp.sdk:tapp-sdk-android:${getExtOrDefault('tappAndroidSdkVersion')}"
+  implementation files("libs/tapp-sdk-android-${getExtOrDefault('tappAndroidSdkVersion')}.aar")
+  implementation "androidx.core:core-ktx:1.10.1"
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0"
+  implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3"
+  implementation "com.squareup.okhttp3:okhttp:4.12.0"
 }
