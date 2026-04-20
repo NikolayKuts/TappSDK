@@ -1,45 +1,49 @@
-# tapp-sdk-react-native
+# Tapp SDK React Native
 
-React Native wrapper for the Tapp Android SDK.
+React Native wrapper for the Tapp Android SDK. It initializes the native SDK so the host app can fetch widget configuration, cache assets, and expose the Tapp home screen widget.
 
-## Installation
+## Requirements
 
+- Node.js 22+
+- Android Studio / Android SDK
+- Yarn 4 via Corepack or the bundled Yarn release
+
+## Install in a React Native App
+
+Install the packaged React Native library in a host app:
 
 ```sh
-npm install tapp-sdk-react-native
+yarn add ./tapp-sdk-react-native-0.1.0.tgz
 ```
 
-For Android local development, publish the Android SDK first:
+The package includes the Tapp Android SDK AAR, so a host app does not need to publish the Android SDK separately.
 
-```sh
-./gradlew :Library:publishTappSdkToMavenLocal
-```
-
-The Android app that consumes this package must resolve dependencies from `mavenLocal()`.
-
-
-## Usage
-
+## API
 
 ```ts
 import { TappSdk } from 'tapp-sdk-react-native';
 
-// ...
-
 TappSdk.initialize('https://example.com/tapp-config.json');
 ```
 
+`initialize` should be called once when the app starts. On Android it fetches the remote JSON configuration, stores the last fetch time, caches image assets locally, and prepares the home screen widget configuration.
 
-## Contributing
+## Demo App
 
-- [Development workflow](CONTRIBUTING.md#development-workflow)
-- [Sending a pull request](CONTRIBUTING.md#sending-a-pull-request)
-- [Code of conduct](CODE_OF_CONDUCT.md)
+The demo app already depends on the local `.tgz` package. No manual `yarn add` is needed for the demo.
 
-## License
+From `ReactNative/tapp-sdk-react-native`:
 
-MIT
+```sh
+yarn install
+yarn demo android
+```
 
----
+The demo app calls `TappSdk.initialize(...)` on startup. After installing it, add `TappWidget` from the launcher widget picker and tap the center spin button.
 
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
+## Notes
+
+- Android is the supported platform for this assignment.
+- The current wrapper exposes a minimal API: `TappSdk.initialize(configurationUrl)`.
+- JSON configuration and image assets are cached by the native Android SDK.
+- The `.tgz` package is the intended installable React Native artifact for review.
